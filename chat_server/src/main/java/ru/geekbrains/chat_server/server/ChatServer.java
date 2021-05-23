@@ -3,7 +3,7 @@ package ru.geekbrains.chat_server.server;
 import ru.geekbrains.april_chat.common.ChatMessage;
 import ru.geekbrains.april_chat.common.MessageType;
 import ru.geekbrains.chat_server.auth.AuthService;
-import ru.geekbrains.chat_server.auth.PrimitiveInMemoryAuthService;
+import ru.geekbrains.chat_server.auth.AuthServiceImpl;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -18,7 +18,7 @@ public class ChatServer {
 
     public ChatServer() {
         this.listOnlineUsers = new ArrayList<>();
-        this.authService = new PrimitiveInMemoryAuthService();
+        this.authService = new AuthServiceImpl();
     }
 
     public void start() {
