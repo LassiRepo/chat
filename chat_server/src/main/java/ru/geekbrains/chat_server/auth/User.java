@@ -1,9 +1,13 @@
 package ru.geekbrains.chat_server.auth;
 
 public class User {
+    private Integer id;
     private String username;
     private String login;
     private String password;
+
+
+    public User() {}
 
     public User(String username, String login, String password) {
         this.username = username;
@@ -33,5 +37,13 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 }
