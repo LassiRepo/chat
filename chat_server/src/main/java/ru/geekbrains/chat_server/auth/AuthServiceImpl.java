@@ -1,47 +1,21 @@
 package ru.geekbrains.chat_server.auth;
 
-import java.sql.*;
-import java.util.Properties;
+import ru.geekbrains.chat_server.db.ClientsDatabaseService;
 
 public class AuthServiceImpl implements AuthService {
-    private static Connection connection;
-    private static Statement statement;
+    ClientsDatabaseService clientsDatabaseService = new ClientsDatabaseService();
 
-    private static final String GET_USER_BY_USERNAME = "SELECT * FROM chat_user WHERE login = '%s'";
 
     @Override
     public void start() {
         System.out.println("Auth service started");
-        createDBConnection();
+        clientsDatabaseService.createDBConnection();
     }
 
     @Override
     public void stop() {
         System.out.println("Auth service stopped");
 
-    }
-
-    @Override
-    public String getUsernameByLoginAndPassword(String login, String password) {
-        try {
-            statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(String.format(GET_USER_BY_USERNAME, login));
-            resultSet.next();
-
-            User user = new User();
-            user.setId(resultSet.getInt(1));
-            user.setUsername(resultSet.getString(2));
-            user.setLogin(resultSet.getString(3));
-            user.setPassword(resultSet.getString(4));
-
-            if (user.getPassword().equals(password)) return user.getUsername();
-            return null;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return null;
     }
 
     @Override
@@ -54,34 +28,18 @@ public class AuthServiceImpl implements AuthService {
         return null;
     }
 
-    private static void createDBConnection() {
-        try {
-            Properties props = new Properties();
-            props.setProperty("user", "postgres");
-            props.setProperty("password", "pa55word");
-            connection = DriverManager.getConnection("jdbc:postgresql://localhost/chatDB", props);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            DBDisconnect();
-        }
+    @Override
+    public String getUsernameByLoginAndPassword(String login, String password) {
+        User user = clientsDatabaseService.getUserByLogin(login);
 
-    }
-
-    private static void DBDisconnect() {
-        if (statement != null) {
-            try {
-                statement.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
+        if (user.getPassword().equals(password)) {
+            return user.getUsername();
+        } else {
+            return null;
         }
     }
+
+
 }
+
+

@@ -18,6 +18,7 @@ import ru.geekbrains.april_chat.common.ChatMessage;
 import ru.geekbrains.april_chat.common.MessageType;
 import ru.geekbrains.chat.client.network.ChatMessageService;
 import ru.geekbrains.chat.client.network.ChatMessageServiceImpl;
+import ru.geekbrains.chat.client.network.History;
 import ru.geekbrains.chat.client.network.MessageProcessor;
 
 
@@ -72,7 +73,10 @@ public class MainChatController implements Initializable, MessageProcessor {
         msg.setFrom(currentName);
         msg.setBody(text);
         messageService.send(msg.marshall());
-        chatArea.appendText(String.format("[ME] %s\n", text));
+
+        String finalMessage = String.format("[ME] %s\n", text);
+        chatArea.appendText(finalMessage);
+        History.writeHistory(currentName,finalMessage);
         inputField.clear();
     }
 
@@ -81,6 +85,7 @@ public class MainChatController implements Initializable, MessageProcessor {
         String modifier = msg.getMessageType().equals(MessageType.PUBLIC) ? "[pub]" : "[priv]";
         String text = String.format("[%s] %s %s\n", msg.getFrom(), modifier, msg.getBody());
         chatArea.appendText(text);
+        History.writeHistory(currentName,text);
     }
 
     private void showError(Exception e) {
