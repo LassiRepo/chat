@@ -2,14 +2,14 @@ package ru.geekbrains.chat_server.auth;
 
 import ru.geekbrains.chat_server.db.ClientsDatabaseService;
 
+import java.sql.SQLException;
+
 public class AuthServiceImpl implements AuthService {
-    ClientsDatabaseService clientsDatabaseService = new ClientsDatabaseService();
-
-
+    private ClientsDatabaseService dbService;
     @Override
     public void start() {
-        System.out.println("Auth service started");
-        clientsDatabaseService.createDBConnection();
+        dbService = ClientsDatabaseService.getInstance();
+        dbService.createDBConnection();
     }
 
     @Override
@@ -20,7 +20,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String changeUsername(String oldName, String newName) {
-        return null;
+        try {
+            return dbService.changeUsername(oldName, newName);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Username change unsuccessful");
+        }
     }
 
     @Override
@@ -30,7 +35,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String getUsernameByLoginAndPassword(String login, String password) {
-        User user = clientsDatabaseService.getUserByLogin(login);
+        User user = dbService.getUserByLogin(login);
 
         if (user.getPassword().equals(password)) {
             return user.getUsername();

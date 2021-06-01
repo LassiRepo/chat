@@ -11,6 +11,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -22,11 +23,12 @@ import ru.geekbrains.chat.client.network.History;
 import ru.geekbrains.chat.client.network.MessageProcessor;
 
 
-import java.awt.*;
+import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
 public class MainChatController implements Initializable, MessageProcessor {
@@ -39,8 +41,23 @@ public class MainChatController implements Initializable, MessageProcessor {
     public TextField loginField;
     public PasswordField passwordField;
     public Button btnSendAuth;
+    public GridPane loginPane;
+    public Button submitButton;
+    public GridPane changeNickPane;
+    public TextField changeNickNewNick;
+    public PasswordField changeNickPass;
+    public Button submitNickButton;
+    public Button backFromNick;
+    public GridPane changePassPane;
+    public PasswordField oldPass;
+    public PasswordField newPass;
+    public Button submitChangePass;
+    public Button backFromPass;
+    public PasswordField confirmNewPass;
+    public VBox chatPane;
     private ChatMessageService messageService;
     private String currentName;
+    private History historyMaker;
 
     public void mockAction(ActionEvent actionEvent) {
        try {
@@ -76,7 +93,7 @@ public class MainChatController implements Initializable, MessageProcessor {
 
         String finalMessage = String.format("[ME] %s\n", text);
         chatArea.appendText(finalMessage);
-        History.writeHistory(currentName,finalMessage);
+        historyMaker.writeHistory(currentName,finalMessage);
         inputField.clear();
     }
 
@@ -85,7 +102,7 @@ public class MainChatController implements Initializable, MessageProcessor {
         String modifier = msg.getMessageType().equals(MessageType.PUBLIC) ? "[pub]" : "[priv]";
         String text = String.format("[%s] %s %s\n", msg.getFrom(), modifier, msg.getBody());
         chatArea.appendText(text);
-        History.writeHistory(currentName,text);
+        historyMaker.writeHistory(currentName,text);
     }
 
     private void showError(Exception e) {
@@ -162,8 +179,21 @@ public class MainChatController implements Initializable, MessageProcessor {
                         case AUTH_CONFIRM: {
                             this.currentName = message.getBody();
                             App.stage1.setTitle(currentName);
+                            loginPane.setVisible(false);
+                            chatPane.setVisible(true);
+                            this.historyMaker = new History(message.getBody());
+                            List<String> history = historyMaker.readHistory();
+                            for (String s : history) {
+                                chatArea.appendText(s + System.lineSeparator());
+                            }
                             break;
                         }
+                        case CHANGE_USERNAME_CONFIRM:
+                            changeNickPane.setVisible(false);
+                            chatPane.setVisible(true);
+                            currentName = message.getBody();
+                            App.stage1.setTitle(currentName);
+                            break;
                         case ERROR:
                             showError(message);
                             break;
@@ -194,5 +224,53 @@ public class MainChatController implements Initializable, MessageProcessor {
         msg.setLogin(log);
         msg.setPassword(pass);
         messageService.send(msg.marshall());
+    }
+
+    public void pressChangeNick(ActionEvent event) {
+        chatPane.setVisible(false);
+        changeNickPane.setVisible(true);
+
+    }
+
+    public void pressChangePassword(ActionEvent event) {
+        chatPane.setVisible(false);
+        changePassPane.setVisible(true);
+    }
+
+    public void sendChangeUsername(ActionEvent event) {
+        ChatMessage message = new ChatMessage();
+        message.setMessageType(MessageType.CHANGE_USERNAME);
+        message.setBody(changeNickNewNick.getText());
+        message.setFrom(this.currentName);
+        message.setPassword(changeNickPass.getText());
+
+        messageService.send(message.marshall());
+    }
+    public void pressBack(ActionEvent event) {
+        changePassPane.setVisible(false);
+        changeNickPane.setVisible(false);
+        chatPane.setVisible(true);
+    }
+
+    public void sendChangePass(ActionEvent event) {
+        String password = oldPass.getText();
+        String newPassword = newPass.getText();
+        String confirmPass = confirmNewPass.getText();
+
+        if (newPassword.equals(confirmPass)) {
+            ChatMessage message = new ChatMessage();
+            message.setMessageType(MessageType.CHANGE_PASSWORD);
+            message.setPassword(password);
+            message.setFrom(this.currentName);
+            messageService.send(message.marshall());
+        } else {
+            oldPass.clear();
+            newPass.clear();
+            confirmNewPass.clear();
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Changing your password is failed");
+            alert.setContentText("Entered passwords are not equal");
+            alert.showAndWait();
+        }
     }
 }
