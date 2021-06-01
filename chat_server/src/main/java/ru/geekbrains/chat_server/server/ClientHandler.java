@@ -31,15 +31,18 @@ public class ClientHandler {
     }
 
     public void handle() {
-        new Thread(() -> {
-            try {
-                authenticate();
-                readMessages();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }).start();
-    }
+//        new Thread(() -> {
+            chatServer.getExecutorService().execute(() -> {
+                System.out.println("Thread started " + Thread.currentThread().getName());
+                        try {
+                            authenticate();
+                            readMessages();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    });
+//        }).start();
+    };
 
     private void readMessages() throws IOException {
         try {
@@ -54,6 +57,18 @@ public class ClientHandler {
                     case PRIVATE:
                         chatServer.sendPrivateMessage(message);
                         break;
+                    case CHANGE_USERNAME:
+                        System.out.printf("Got change un f: %s n %s", this.currentUsername, message.getBody());
+                        String newName = chatServer.getAuthService().changeUsername(this.currentUsername, message.getBody());
+                        ChatMessage response = new ChatMessage();
+                        if (newName == null && newName.isEmpty()) {
+                            response.setMessageType(MessageType.ERROR);
+                            response.setBody("Something went wrong!");
+                        } else {
+                            response.setMessageType(MessageType.CHANGE_USERNAME_CONFIRM);
+                            response.setBody(newName);
+                        }
+                        sendMessage(response);
                 }
             }
         } catch (IOException e) {
@@ -109,7 +124,7 @@ public class ClientHandler {
                 String username = chatServer.getAuthService().getUsernameByLoginAndPassword(msg.getLogin(), msg.getPassword());
                 ChatMessage response = new ChatMessage();
 
-                if (username == null) {
+                if (username.isEmpty()) {
                     response.setMessageType(MessageType.ERROR);
                     response.setBody("Wrong username or password!");
                     System.out.println("Wrong credentials");

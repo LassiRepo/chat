@@ -6,9 +6,30 @@ import java.sql.*;
 import java.util.Properties;
 
 public class ClientsDatabaseService {
+    private static ClientsDatabaseService instance;
     private static Connection connection;
     private static Statement statement;
     private static final String GET_USER_BY_USERNAME = "SELECT * FROM chat_user WHERE login = '%s'";
+    private final String CHANGE_USERNAME = "update chat_user set username = ? where username = ?;";
+
+
+    private ClientsDatabaseService() {
+        createDBConnection();
+    }
+
+    public static ClientsDatabaseService getInstance() {
+        if (instance != null) return instance;
+        instance = new ClientsDatabaseService();
+        return instance;
+    }
+    public String changeUsername(String oldName, String newName) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(CHANGE_USERNAME)) {
+            ps.setString(1, newName);
+            ps.setString(2, oldName);
+            if (ps.executeUpdate() > 0) return newName;
+        }
+        return oldName;
+    }
 
 
     public User getUserByLogin(String login) {

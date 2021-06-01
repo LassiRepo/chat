@@ -10,33 +10,47 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ChatServer {
     private static final int PORT = 12256;
     private List<ClientHandler> listOnlineUsers;
     private AuthService authService;
+    private ExecutorService executorService;
+
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
 
     public ChatServer() {
         this.listOnlineUsers = new ArrayList<>();
         this.authService = new AuthServiceImpl();
+        this.executorService = Executors.newCachedThreadPool();
+
     }
 
     public void start() {
-        try(ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("Server started");
-            authService.start();
-
-            while (true) {
-                System.out.println("Waiting for connection");
-                Socket socket = serverSocket.accept();
-                System.out.println("Client connected");
-                new ClientHandler(socket, this).handle();
+        System.out.println("Server started");
+        authService.start();
+        executorService.execute(() -> {
+            System.out.println("Thread started " + Thread.currentThread().getName());
+            try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+                while (true) {
+                    System.out.println("Thread while " + Thread.currentThread().getName());
+                    System.out.println("Waiting for connection");
+                    Socket socket = serverSocket.accept();
+                    System.out.println("Client connected");
+                    new ClientHandler(socket, this).handle();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                authService.stop();
+                this.executorService.shutdownNow();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            authService.stop();
-        }
+        });
     }
 
     private synchronized void sendListOnlineUsers() {
@@ -59,7 +73,7 @@ public class ChatServer {
 
     public void sendPrivateMessage(ChatMessage message) {
         for (ClientHandler user : listOnlineUsers) {
-          if (user.getCurrentName().equals(message.getTo())) user.sendMessage(message);
+            if (user.getCurrentName().equals(message.getTo())) user.sendMessage(message);
         }
     }
 
