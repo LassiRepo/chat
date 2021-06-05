@@ -1,9 +1,12 @@
 package ru.geekbrains.chat_server.server;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import ru.geekbrains.april_chat.common.ChatMessage;
 import ru.geekbrains.april_chat.common.MessageType;
 import ru.geekbrains.chat_server.auth.AuthService;
 import ru.geekbrains.chat_server.auth.AuthServiceImpl;
+import ru.geekbrains.chat_server.db.ClientsDatabaseService;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -18,6 +21,7 @@ public class ChatServer {
     private List<ClientHandler> listOnlineUsers;
     private AuthService authService;
     private ExecutorService executorService;
+    public static final Logger LOGGER = LogManager.getLogger(ChatServer.class);
 
     public ExecutorService getExecutorService() {
         return executorService;
@@ -32,20 +36,18 @@ public class ChatServer {
     }
 
     public void start() {
-        System.out.println("Server started");
+        LOGGER.info("Server started");
         authService.start();
         executorService.execute(() -> {
-            System.out.println("Thread started " + Thread.currentThread().getName());
             try (ServerSocket serverSocket = new ServerSocket(PORT)) {
                 while (true) {
-                    System.out.println("Thread while " + Thread.currentThread().getName());
-                    System.out.println("Waiting for connection");
+                    LOGGER.info("Waiting for connection");
                     Socket socket = serverSocket.accept();
-                    System.out.println("Client connected");
+                    LOGGER.info("Client connected");
                     new ClientHandler(socket, this).handle();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error(e.getMessage(), e);
             } finally {
                 authService.stop();
                 this.executorService.shutdownNow();

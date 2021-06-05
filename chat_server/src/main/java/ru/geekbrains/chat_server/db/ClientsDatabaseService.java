@@ -1,5 +1,8 @@
 package ru.geekbrains.chat_server.db;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import ru.geekbrains.chat_server.auth.AuthServiceImpl;
 import ru.geekbrains.chat_server.auth.User;
 
 import java.sql.*;
@@ -11,6 +14,7 @@ public class ClientsDatabaseService {
     private static Statement statement;
     private static final String GET_USER_BY_USERNAME = "SELECT * FROM chat_user WHERE login = '%s'";
     private final String CHANGE_USERNAME = "update chat_user set username = ? where username = ?;";
+    public static final Logger LOGGER = LogManager.getLogger(ClientsDatabaseService.class);
 
 
     private ClientsDatabaseService() {
@@ -46,6 +50,7 @@ public class ClientsDatabaseService {
 
             return user;
         } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
             e.printStackTrace();
         }
 
@@ -59,7 +64,7 @@ public class ClientsDatabaseService {
             props.setProperty("password", "pa55word");
             connection = DriverManager.getConnection("jdbc:postgresql://localhost/chatDB", props);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
         } finally {
             DBDisconnect();
         }
@@ -70,13 +75,13 @@ public class ClientsDatabaseService {
             try {
                 statement.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                LOGGER.error(e.getMessage(), e);
             }
             if (connection != null) {
                 try {
                     connection.close();
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    LOGGER.error(e.getMessage(), e);
                 }
             }
         }
