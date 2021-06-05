@@ -1,7 +1,10 @@
 package ru.geekbrains.chat_server.server;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import ru.geekbrains.april_chat.common.ChatMessage;
 import ru.geekbrains.april_chat.common.MessageType;
+import ru.geekbrains.chat_server.auth.AuthServiceImpl;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -19,6 +22,7 @@ public class ClientHandler {
     private DataOutputStream outputStream;
     private DataInputStream inputStream;
     private String currentUsername;
+    public static final Logger LOGGER = LogManager.getLogger(ClientHandler.class);
 
     public ClientHandler(Socket socket, ChatServer chatServer) {
         try {
@@ -26,21 +30,21 @@ public class ClientHandler {
             this.socket = socket;
             this.inputStream = new DataInputStream(socket.getInputStream());
             this.outputStream = new DataOutputStream(socket.getOutputStream());
-            System.out.println("Client handler created!!!");
+            LOGGER.info("Client handler created!!!");
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
     public void handle() {
 //        new Thread(() -> {
             chatServer.getExecutorService().execute(() -> {
-                System.out.println("Thread started " + Thread.currentThread().getName());
+//                System.out.println("Thread started " + Thread.currentThread().getName());
                         try {
                             authenticate();
                             readMessages();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            LOGGER.error(e.getMessage(), e);
                         }
                     });
 //        }).start();
@@ -60,7 +64,7 @@ public class ClientHandler {
                         chatServer.sendPrivateMessage(message);
                         break;
                     case CHANGE_USERNAME:
-                        System.out.printf("Got change un f: %s n %s", this.currentUsername, message.getBody());
+                        LOGGER.info(String.format("Got change un f: %s n %s", this.currentUsername, message.getBody()));
                         String newName = chatServer.getAuthService().changeUsername(this.currentUsername, message.getBody());
                         ChatMessage response = new ChatMessage();
                         if (newName == null && newName.isEmpty()) {
@@ -74,7 +78,7 @@ public class ClientHandler {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
         } finally {
             closeHandler();
         }
@@ -84,7 +88,7 @@ public class ClientHandler {
         try {
             outputStream.writeUTF(message.marshall());
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -116,12 +120,12 @@ public class ClientHandler {
         }, AUTH_TIMEOUT);
 
 
-        System.out.println("Started client  auth...");
+        LOGGER.info("Started client  auth...");
 
         try {
             while (true) {
                 String authMessage = inputStream.readUTF();
-                System.out.println("Auth received");
+                LOGGER.info("Auth received");
                 ChatMessage msg = ChatMessage.unmarshall(authMessage);
                 String username = chatServer.getAuthService().getUsernameByLoginAndPassword(msg.getLogin(), msg.getPassword());
                 ChatMessage response = new ChatMessage();
@@ -129,24 +133,24 @@ public class ClientHandler {
                 if (username.isEmpty()) {
                     response.setMessageType(MessageType.ERROR);
                     response.setBody("Wrong username or password!");
-                    System.out.println("Wrong credentials");
+                    LOGGER.info("Wrong credentials");
                 } else if (chatServer.isUserOnline(username)) {
                     response.setMessageType(MessageType.ERROR);
                     response.setBody("Double auth!");
-                    System.out.println("Double auth!");
+                    LOGGER.info("Double auth!");
                 } else {
                     response.setMessageType(MessageType.AUTH_CONFIRM);
                     response.setBody(username);
                     currentUsername = username;
                     chatServer.subscribe(this);
-                    System.out.println("Subscribed");
+                    LOGGER.info("Subscribed");
                     sendMessage(response);
                     break;
                 }
                 sendMessage(response);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -155,7 +159,7 @@ public class ClientHandler {
             chatServer.unsubscribe(this);
             socket.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
         }
     }
 

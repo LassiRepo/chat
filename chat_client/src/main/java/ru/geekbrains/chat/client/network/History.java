@@ -46,6 +46,7 @@ public class History {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+
             }
         }
         System.out.println("History for " + result.size());

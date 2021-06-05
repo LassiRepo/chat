@@ -1,20 +1,26 @@
 package ru.geekbrains.chat_server.auth;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import ru.geekbrains.chat_server.db.ClientsDatabaseService;
 
 import java.sql.SQLException;
 
 public class AuthServiceImpl implements AuthService {
     private ClientsDatabaseService dbService;
+    public static final Logger LOGGER = LogManager.getLogger(AuthServiceImpl.class);
+
     @Override
     public void start() {
+        LOGGER.info("Auth service start");
         dbService = ClientsDatabaseService.getInstance();
         dbService.createDBConnection();
     }
 
     @Override
     public void stop() {
-        System.out.println("Auth service stopped");
+        LOGGER.info("Auth service stopped");
+
 
     }
 
@@ -23,7 +29,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             return dbService.changeUsername(oldName, newName);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
             throw new RuntimeException("Username change unsuccessful");
         }
     }
